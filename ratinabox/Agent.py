@@ -81,6 +81,7 @@ class Agent:
         "wall_repel_distance": 0.1, # distance from wall at which wall repulsion starts
         "wall_repel_strength": 1.0, # wall repulsion strength when agent is within wall_repel_distance (0 = no repulsion)
         "save_history": True,  # whether to save position and velocity history as you go
+        "rotate_only": False, # if True: no translational actions taken, only rotation. 
     }
 
     def __init__(self, Environment, params={}):
@@ -212,16 +213,23 @@ class Agent:
                 **kwargs)            
             # Drift velocity to avoid walls 
             self._wall_velocity_update(**kwargs)
-            # Propose a new position by integrating the velocity
-            self.pos += self.velocity * dt       
-            # Check for wall collisions and handle them
-            self._check_and_handle_wall_collisions()
-            # Handle times when the Agent is now outside the Environment. 
-            # This is mostly a safety net. Crossing the boundary should be handled by the wall collision function above.
-            if (self.Environment.check_if_position_is_in_environment(self.pos) is False):
-                self.pos = self.Environment.apply_boundary_conditions(self.pos)
-            # Calculate the velocity of the step that, after all that, was taken.
-            self._measure_velocity_of_step_taken()
+
+            if self.rotate_only is True:
+                self.pos = self.prev_pos.copy()
+                self.measured_velocity = self.velocity.copy()
+                if self.Environment.dimensionality == "2D":
+                    self.measured_rotational_velocity = self.rotational_velocity
+            else:
+                # Propose a new position by integrating the velocity
+                self.pos += self.velocity * dt       
+                # Check for wall collisions and handle them
+                self._check_and_handle_wall_collisions()
+                # Handle times when the Agent is now outside the Environment. 
+                # This is mostly a safety net. Crossing the boundary should be handled by the wall collision function above.
+                if (self.Environment.check_if_position_is_in_environment(self.pos) is False):
+                    self.pos = self.Environment.apply_boundary_conditions(self.pos)
+                # Calculate the velocity of the step that, after all that, was taken.
+                self._measure_velocity_of_step_taken()
 
        
     
